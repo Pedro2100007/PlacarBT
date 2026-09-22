@@ -1,0 +1,985 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Placar Digital Beach Tennis - R12 Beach Sports</title>
+  <!-- SheetJS para exportação em Excel (.xls/.xlsx) -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <style>
+    :root {
+      --bg-dark: #070d18;
+      --card-bg: #101a2e;
+      --card-border: #1e2e4a;
+      --team-1-glow: #00d2ff;
+      --team-1-btn: linear-gradient(135deg, #0284c7, #00d2ff);
+      --team-2-glow: #ff2d55;
+      --team-2-btn: linear-gradient(135deg, #e11d48, #ff2d55);
+      --points-color: #f8fafc;
+      --games-gold: #fbbf24;
+      --accent-neon: #10b981;
+      --text-muted: #94a3b8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: #ffffff;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 0.75rem;
+      overflow-x: hidden;
+    }
+
+    /* TOPO / HEADER */
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 0.6rem 1.2rem;
+      gap: 1rem;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    }
+
+    .brand-section {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+    }
+
+    .logo-wrapper {
+      position: relative;
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      border: 2.5px solid var(--accent-neon);
+      background: #000;
+      overflow: hidden;
+      cursor: pointer;
+      box-shadow: 0 0 12px rgba(16, 185, 129, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: transform 0.2s ease, border-color 0.2s;
+    }
+
+    .logo-wrapper:hover {
+      transform: scale(1.05);
+      border-color: #34d399;
+    }
+
+    .logo-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .logo-badge-overlay {
+      position: absolute;
+      bottom: 0;
+      width: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      color: #fff;
+      font-size: 0.55rem;
+      text-align: center;
+      font-weight: 700;
+      padding: 1px 0;
+      letter-spacing: 0.5px;
+    }
+
+    .match-info-text h1 {
+      font-size: 1.15rem;
+      font-weight: 900;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      background: linear-gradient(90deg, #fff, #94a3b8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.78rem;
+      color: var(--accent-neon);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-top: 2px;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      background-color: var(--accent-neon);
+      border-radius: 50%;
+      box-shadow: 0 0 8px var(--accent-neon);
+      animation: pulse 1.8s infinite;
+    }
+
+    @keyframes pulse {
+      0% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.3; transform: scale(0.85); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .btn-action {
+      background: #19263e;
+      color: #f1f5f9;
+      border: 1px solid #2d4163;
+      padding: 0.5rem 0.85rem;
+      border-radius: 10px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      transition: all 0.2s;
+    }
+
+    .btn-action:hover {
+      background: #253859;
+      border-color: #3b82f6;
+    }
+
+    /* PLACAR CENTRAL */
+    main {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 0.8rem 0;
+      flex: 1;
+    }
+
+    .team-card {
+      background: var(--card-bg);
+      border: 2px solid var(--card-border);
+      border-radius: 20px;
+      padding: 1.2rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+      transition: border-color 0.3s;
+    }
+
+    .team-card.team-1 { border-color: rgba(0, 210, 255, 0.45); }
+    .team-card.team-2 { border-color: rgba(255, 45, 85, 0.45); }
+
+    .team-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.6rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid #1e293b;
+    }
+
+    .team-name-input {
+      background: transparent;
+      border: none;
+      border-bottom: 2px dashed rgba(255, 255, 255, 0.25);
+      color: #ffffff;
+      font-size: 1.7rem;
+      font-weight: 900;
+      width: 100%;
+      outline: none;
+      padding: 0.2rem 0;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .team-name-input:focus {
+      border-bottom-color: var(--accent-neon);
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .serving-indicator {
+      font-size: 1.8rem;
+      cursor: pointer;
+      opacity: 0.15;
+      transition: transform 0.2s, opacity 0.2s;
+      filter: grayscale(1);
+    }
+
+    .serving-indicator.active {
+      opacity: 1;
+      filter: none;
+      transform: scale(1.15);
+      animation: bounceBall 1.5s infinite;
+    }
+
+    @keyframes bounceBall {
+      0%, 100% { transform: translateY(0) scale(1.15); }
+      50% { transform: translateY(-4px) scale(1.2); }
+    }
+
+    /* EXIBIÇÃO DOS PONTOS & GAMES */
+    .score-display-area {
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      margin: 1rem 0;
+    }
+
+    .score-group {
+      text-align: center;
+    }
+
+    .score-label {
+      font-size: 0.85rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--text-muted);
+      margin-bottom: 0.2rem;
+    }
+
+    .score-games {
+      font-size: 5rem;
+      font-weight: 900;
+      line-height: 1;
+      color: var(--games-gold);
+      text-shadow: 0 0 20px rgba(251, 191, 36, 0.4);
+    }
+
+    .score-points {
+      font-size: 8.5rem;
+      font-weight: 900;
+      line-height: 1;
+      letter-spacing: -3px;
+      color: var(--points-color);
+      min-width: 170px;
+    }
+
+    .team-1 .score-points {
+      color: var(--team-1-glow);
+      text-shadow: 0 0 35px rgba(0, 210, 255, 0.5);
+    }
+
+    .team-2 .score-points {
+      color: var(--team-2-glow);
+      text-shadow: 0 0 35px rgba(255, 45, 85, 0.5);
+    }
+
+    /* BOTÃO DE PONTUAÇÃO */
+    .btn-score {
+      width: 100%;
+      padding: 1.25rem 1rem;
+      border: none;
+      border-radius: 14px;
+      font-size: 1.35rem;
+      font-weight: 900;
+      text-transform: uppercase;
+      cursor: pointer;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+      transition: transform 0.08s ease, filter 0.15s ease;
+      touch-action: manipulation;
+    }
+
+    .team-1 .btn-score { background: var(--team-1-btn); }
+    .team-2 .btn-score { background: var(--team-2-btn); }
+
+    .btn-score:active {
+      transform: scale(0.97);
+      filter: brightness(1.25);
+    }
+
+    .btn-score-shortcut {
+      font-size: 0.75rem;
+      opacity: 0.85;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      margin-top: 3px;
+    }
+
+    /* RODAPÉ & CONTROLES */
+    footer {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 0.65rem 1.2rem;
+      gap: 0.75rem;
+    }
+
+    .btn-undo {
+      background: #334155;
+      color: #fff;
+      border: 1px solid #475569;
+      padding: 0.75rem 1.4rem;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.2s;
+    }
+
+    .btn-undo:hover {
+      background: #475569;
+    }
+
+    .btn-undo:active {
+      transform: scale(0.97);
+    }
+
+    .remote-hints {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.4rem;
+      color: var(--text-muted);
+      font-size: 0.78rem;
+    }
+
+    .remote-hints kbd {
+      background: #09101d;
+      border: 1px solid #243552;
+      border-radius: 5px;
+      padding: 0.15rem 0.45rem;
+      color: #38bdf8;
+      font-weight: 700;
+    }
+
+    .btn-export {
+      background: #10b981;
+      color: #022c22;
+      border: none;
+      padding: 0.75rem 1.4rem;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      font-weight: 900;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+      transition: filter 0.2s;
+    }
+
+    .btn-export:hover {
+      filter: brightness(1.15);
+    }
+
+    /* MODAL DE NOTIFICAÇÃO E TROCA DE LOGO */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 1rem;
+    }
+
+    .modal-content {
+      background: #131e33;
+      border: 1px solid #2d4163;
+      border-radius: 18px;
+      padding: 1.5rem;
+      max-width: 440px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+    }
+
+    .modal-title {
+      font-size: 1.25rem;
+      font-weight: 800;
+      margin-bottom: 0.6rem;
+      color: #f8fafc;
+    }
+
+    .modal-body {
+      color: #94a3b8;
+      font-size: 0.9rem;
+      line-height: 1.5;
+      margin-bottom: 1.2rem;
+    }
+
+    .modal-input {
+      width: 100%;
+      background: #09101d;
+      border: 1px solid #2d4163;
+      color: #fff;
+      padding: 0.7rem;
+      border-radius: 8px;
+      margin-bottom: 0.8rem;
+      font-size: 0.85rem;
+      outline: none;
+    }
+
+    .modal-buttons {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: center;
+    }
+
+    /* RESPONSIVIDADE PARA SMARTPHONES / TABLET EM PÉ */
+    @media (max-width: 800px) {
+      main {
+        grid-template-columns: 1fr;
+      }
+      .score-points {
+        font-size: 6rem;
+        min-width: 120px;
+      }
+      .score-games {
+        font-size: 3.5rem;
+      }
+      .remote-hints {
+        display: none;
+      }
+      header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .header-actions {
+        width: 100%;
+        justify-content: space-between;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand-section">
+      <!-- Logo interativo com fallback e carregamento sem referer para contornar bloqueio de Instagram/Facebook -->
+      <div class="logo-wrapper" id="logo-container" title="Clique para trocar o logo ou carregar imagem local">
+        <img 
+          id="club-logo" 
+          class="logo-img" 
+          src="https://lookaside.fbsbx.com/lookaside/crawler/instagram/r12_beach_sports/profile_pic.jpg" 
+          alt="R12 Beach Sports" 
+          referrerpolicy="no-referrer"
+          crossorigin="anonymous"
+        />
+        <div class="logo-badge-overlay">EDITAR</div>
+      </div>
+
+      <!-- Input invisível para carregar arquivo local de imagem -->
+      <input type="file" id="file-logo-input" accept="image/*" style="display: none;" />
+
+      <div class="match-info-text">
+        <h1>R12 Beach Sports</h1>
+        <div class="status-badge">
+          <div class="status-dot"></div>
+          <span id="match-status">Partida em Andamento</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="header-actions">
+      <button class="btn-action" id="btn-switch-server" title="Alternar saque entre as duplas">
+        🎾 Alternar Saque
+      </button>
+      <button class="btn-action" id="btn-reset" title="Reiniciar jogo">
+        🔄 Reiniciar
+      </button>
+      <button class="btn-action" id="btn-fullscreen" title="Entrar em tela cheia">
+        ⛶ Tela Cheia
+      </button>
+    </div>
+  </header>
+
+  <main>
+    <!-- DUPLA 1 -->
+    <section class="team-card team-1" id="card-team1">
+      <div class="team-header">
+        <input 
+          type="text" 
+          id="team1-name" 
+          class="team-name-input" 
+          value="Dupla 1" 
+          maxlength="20"
+          placeholder="Nome da Dupla 1"
+        />
+        <span 
+          class="serving-indicator active" 
+          id="team1-serving" 
+          title="Saque Dupla 1 (Clique para marcar)"
+        >🎾</span>
+      </div>
+
+      <div class="score-display-area">
+        <div class="score-group">
+          <div class="score-label">Games</div>
+          <div class="score-games" id="team1-games">0</div>
+        </div>
+        <div class="score-group">
+          <div class="score-label">Pontos</div>
+          <div class="score-points" id="team1-points">0</div>
+        </div>
+      </div>
+
+      <button class="btn-score" id="btn-team1-add">
+        + Ponto
+        <span class="btn-score-shortcut">Controle: Vol + / Page Up / A</span>
+      </button>
+    </section>
+
+    <!-- DUPLA 2 -->
+    <section class="team-card team-2" id="card-team2">
+      <div class="team-header">
+        <input 
+          type="text" 
+          id="team2-name" 
+          class="team-name-input" 
+          value="Dupla 2" 
+          maxlength="20"
+          placeholder="Nome da Dupla 2"
+        />
+        <span 
+          class="serving-indicator" 
+          id="team2-serving" 
+          title="Saque Dupla 2 (Clique para marcar)"
+        >🎾</span>
+      </div>
+
+      <div class="score-display-area">
+        <div class="score-group">
+          <div class="score-label">Games</div>
+          <div class="score-games" id="team2-games">0</div>
+        </div>
+        <div class="score-group">
+          <div class="score-label">Pontos</div>
+          <div class="score-points" id="team2-points">0</div>
+        </div>
+      </div>
+
+      <button class="btn-score" id="btn-team2-add">
+        + Ponto
+        <span class="btn-score-shortcut">Controle: Vol - / Page Down / B</span>
+      </button>
+    </section>
+  </main>
+
+  <footer>
+    <button class="btn-undo" id="btn-undo" title="Desfazer o último ponto">
+      ↩ Voltar Ponto <span style="opacity: 0.7; font-size: 0.75rem;">(Play / Z)</span>
+    </button>
+
+    <div class="remote-hints">
+      <span>Controle BT:</span>
+      <kbd>Vol +</kbd> Ponto 1 |
+      <kbd>Vol -</kbd> Ponto 2 |
+      <kbd>Play/Pause</kbd> Voltar |
+      <kbd>Next/Prev</kbd> Saque
+    </div>
+
+    <button class="btn-export" id="btn-export" title="Exportar resultado para planilha Excel">
+      💾 Salvar .XLS
+    </button>
+  </footer>
+
+  <!-- MODAL DE TROCA DE LOGO -->
+  <div class="modal-overlay" id="logo-modal">
+    <div class="modal-content">
+      <h3 class="modal-title">Configurar Logo da Quadra</h3>
+      <p class="modal-body">
+        Você pode carregar uma foto do seu dispositivo ou fornecer uma URL direta de imagem.
+      </p>
+      <input type="text" id="logo-url-input" class="modal-input" placeholder="Cole a URL da imagem aqui..." />
+      
+      <div style="margin: 0.8rem 0;">
+        <button class="btn-action" id="btn-trigger-upload" style="width: 100%; justify-content: center;">
+          📁 Escolher Arquivo do Tablet/PC
+        </button>
+      </div>
+
+      <div class="modal-buttons" style="margin-top: 1rem;">
+        <button class="btn-action" id="btn-save-logo-url" style="background: var(--accent-neon); color: #000;">
+          Salvar URL
+        </button>
+        <button class="btn-action" id="btn-close-modal">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL GENÉRICO DE ALERTA/VENCEDOR (Substituto estético de alert()) -->
+  <div class="modal-overlay" id="alert-modal">
+    <div class="modal-content">
+      <h3 class="modal-title" id="alert-title">Fim de Partida!</h3>
+      <p class="modal-body" id="alert-message" style="font-size: 1.1rem; color: #f8fafc; font-weight: 700;"></p>
+      <div class="modal-buttons">
+        <button class="btn-export" id="btn-alert-ok" style="min-width: 120px; justify-content: center;">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- GERENCIAMENTO DO LOGO COM FALLBACK AUTOMÁTICO ---
+    const clubLogo = document.getElementById("club-logo");
+    const logoContainer = document.getElementById("logo-container");
+    const logoModal = document.getElementById("logo-modal");
+    const logoUrlInput = document.getElementById("logo-url-input");
+    const fileLogoInput = document.getElementById("file-logo-input");
+
+    // Fallback caso a URL do Instagram expire ou seja impedida
+    clubLogo.addEventListener("error", function() {
+      console.warn("URL externa do logo não carregou. Aplicando logo vetorial de contingência.");
+      // Substitui por um avatar vetorial temático elegante de Beach Tennis
+      this.src = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' fill='%2310b981'><circle cx='50' cy='50' r='48' fill='%230b172a' stroke='%2310b981' stroke-width='4'/><text x='50' y='46' font-size='22' font-family='sans-serif' font-weight='900' fill='%2338bdf8' text-anchor='middle'>R12</text><text x='50' y='68' font-size='10' font-family='sans-serif' font-weight='700' fill='%23fbbf24' text-anchor='middle'>BEACH</text></svg>";
+    });
+
+    // Abrir modal ao clicar no logo
+    logoContainer.addEventListener("click", () => {
+      logoUrlInput.value = clubLogo.src.startsWith("data:") ? "" : clubLogo.src;
+      logoModal.style.display = "flex";
+    });
+
+    document.getElementById("btn-close-modal").addEventListener("click", () => {
+      logoModal.style.display = "none";
+    });
+
+    document.getElementById("btn-save-logo-url").addEventListener("click", () => {
+      if (logoUrlInput.value.trim()) {
+        clubLogo.src = logoUrlInput.value.trim();
+      }
+      logoModal.style.display = "none";
+    });
+
+    document.getElementById("btn-trigger-upload").addEventListener("click", () => {
+      fileLogoInput.click();
+    });
+
+    // Leitura de arquivo local pelo input file
+    fileLogoInput.addEventListener("change", function() {
+      if (this.files && this.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          clubLogo.src = e.target.result;
+          logoModal.style.display = "none";
+        };
+        reader.readAsDataURL(this.files[0]);
+      }
+    });
+
+    // --- REGRAS DO BEACH TENNIS E ESTADO DO JOGO ---
+    const SCORE_STEPS = ["0", "15", "30", "40"];
+
+    let gameState = {
+      team1: { name: "Dupla 1", scoreIdx: 0, tieBreakPts: 0, games: 0, isServing: true },
+      team2: { name: "Dupla 2", scoreIdx: 0, tieBreakPts: 0, games: 0, isServing: false },
+      isTieBreak: false,
+      matchFinished: false,
+      history: []
+    };
+
+    // DOM Elements
+    const team1NameInput = document.getElementById("team1-name");
+    const team2NameInput = document.getElementById("team2-name");
+    const team1PointsEl = document.getElementById("team1-points");
+    const team2PointsEl = document.getElementById("team2-points");
+    const team1GamesEl = document.getElementById("team1-games");
+    const team2GamesEl = document.getElementById("team2-games");
+    const team1ServingEl = document.getElementById("team1-serving");
+    const team2ServingEl = document.getElementById("team2-serving");
+    const matchStatusEl = document.getElementById("match-status");
+
+    // Prevenir suspensão de tela (Wake Lock)
+    async function activateScreenWakeLock() {
+      try {
+        if ("wakeLock" in navigator) {
+          await navigator.wakeLock.request("screen");
+        }
+      } catch (err) {
+        console.warn("Wake Lock bloqueado:", err);
+      }
+    }
+    activateScreenWakeLock();
+
+    // Modal de mensagem personalizado
+    function showNotification(title, message) {
+      document.getElementById("alert-title").textContent = title;
+      document.getElementById("alert-message").textContent = message;
+      document.getElementById("alert-modal").style.display = "flex";
+    }
+
+    document.getElementById("btn-alert-ok").addEventListener("click", () => {
+      document.getElementById("alert-modal").style.display = "none";
+    });
+
+    // Salvar estado na pilha de Undo
+    function saveState() {
+      const snap = {
+        team1: { ...gameState.team1 },
+        team2: { ...gameState.team2 },
+        isTieBreak: gameState.isTieBreak,
+        matchFinished: gameState.matchFinished
+      };
+      gameState.history.push(JSON.stringify(snap));
+      if (gameState.history.length > 50) gameState.history.shift(); // Limite razoável
+    }
+
+    // Alternar servidor
+    function toggleServer(forcedTeam = null) {
+      if (forcedTeam) {
+        gameState.team1.isServing = (forcedTeam === 'team1');
+        gameState.team2.isServing = (forcedTeam === 'team2');
+      } else {
+        gameState.team1.isServing = !gameState.team1.isServing;
+        gameState.team2.isServing = !gameState.team1.isServing;
+      }
+      updateInterface();
+    }
+
+    // Atualização visual da interface
+    function updateInterface() {
+      team1GamesEl.textContent = gameState.team1.games;
+      team2GamesEl.textContent = gameState.team2.games;
+
+      if (gameState.isTieBreak) {
+        team1PointsEl.textContent = gameState.team1.tieBreakPts;
+        team2PointsEl.textContent = gameState.team2.tieBreakPts;
+        matchStatusEl.textContent = "Tie-Break em Disputa (Até 7)";
+      } else {
+        team1PointsEl.textContent = SCORE_STEPS[gameState.team1.scoreIdx];
+        team2PointsEl.textContent = SCORE_STEPS[gameState.team2.scoreIdx];
+        matchStatusEl.textContent = gameState.matchFinished ? "Partida Finalizada" : "Partida em Andamento";
+      }
+
+      // Indicadores de Saque
+      if (gameState.team1.isServing) {
+        team1ServingEl.classList.add("active");
+        team2ServingEl.classList.remove("active");
+      } else {
+        team1ServingEl.classList.remove("active");
+        team2ServingEl.classList.add("active");
+      }
+    }
+
+    // Adicionar ponto com lógica No-Ad (40-40 é decisivo)
+    function scorePoint(teamKey) {
+      if (gameState.matchFinished) return;
+
+      saveState();
+
+      const rivalKey = (teamKey === "team1") ? "team2" : "team1";
+
+      if (gameState.isTieBreak) {
+        // Tie-Break: quem fizer 7 primeiro com 2 de vantagem vence o jogo/set
+        gameState[teamKey].tieBreakPts++;
+        const p1 = gameState[teamKey].tieBreakPts;
+        const p2 = gameState[rivalKey].tieBreakPts;
+
+        // Alterna saque a cada 2 pontos no tie-break após o 1º ponto
+        const totalTiePoints = p1 + p2;
+        if (totalTiePoints % 2 === 1) {
+          gameState.team1.isServing = !gameState.team1.isServing;
+          gameState.team2.isServing = !gameState.team1.isServing;
+        }
+
+        if (p1 >= 7 && (p1 - p2 >= 2)) {
+          gameState[teamKey].games++;
+          gameState.matchFinished = true;
+          updateInterface();
+          showNotification("🏆 Fim de Partida!", `Vitória de ${gameState[teamKey].name} no Tie-Break (${p1} a ${p2})!`);
+          return;
+        }
+      } else {
+        // Game Normal (No-Ad: 0 -> 15 -> 30 -> 40 -> Game)
+        if (gameState[teamKey].scoreIdx === 3) {
+          // Fechou o Game
+          gameState[teamKey].games++;
+          gameState.team1.scoreIdx = 0;
+          gameState.team2.scoreIdx = 0;
+
+          // Ao término de cada game, o saque passa para a outra dupla
+          toggleServer();
+
+          // Avalia se o Set foi finalizado ou se entra em Tie-Break
+          checkSetProgress(teamKey, rivalKey);
+        } else {
+          gameState[teamKey].scoreIdx++;
+        }
+      }
+
+      updateInterface();
+    }
+
+    // Regras de término de Set
+    function checkSetProgress(winnerKey, loserKey) {
+      const gWinner = gameState[winnerKey].games;
+      const gLoser = gameState[loserKey].games;
+
+      // 6 x 6 -> Inicia Tie-Break
+      if (gWinner === 6 && gLoser === 6) {
+        gameState.isTieBreak = true;
+        gameState.team1.tieBreakPts = 0;
+        gameState.team2.tieBreakPts = 0;
+        return;
+      }
+
+      // Vitória do set tradicional: 6x0 até 6x4, ou 7x5
+      if ((gWinner >= 6 && (gWinner - gLoser >= 2)) || gWinner === 7) {
+        gameState.matchFinished = true;
+        showNotification("🏆 Partida Encerrada!", `Vitória de ${gameState[winnerKey].name} por ${gWinner} a ${gLoser}!`);
+      }
+    }
+
+    // Desfazer Ponto (Undo)
+    function undoPoint() {
+      if (gameState.history.length === 0) return;
+
+      const prev = JSON.parse(gameState.history.pop());
+      gameState.team1 = prev.team1;
+      gameState.team2 = prev.team2;
+      gameState.isTieBreak = prev.isTieBreak;
+      gameState.matchFinished = prev.matchFinished;
+
+      updateInterface();
+    }
+
+    // Reiniciar
+    function resetScoreboard() {
+      saveState();
+      gameState.team1.scoreIdx = 0;
+      gameState.team1.tieBreakPts = 0;
+      gameState.team1.games = 0;
+      gameState.team2.scoreIdx = 0;
+      gameState.team2.tieBreakPts = 0;
+      gameState.team2.games = 0;
+      gameState.isTieBreak = false;
+      gameState.matchFinished = false;
+      updateInterface();
+    }
+
+    // Exportação em Planilha Excel (.xls) via SheetJS
+    function exportSpreadsheet() {
+      const dateFormatted = new Date().toLocaleString("pt-BR");
+
+      const sumulaData = [
+        ["R12 BEACH SPORTS - SÚMULA DIGITAL DE PARTIDA"],
+        ["Data e Hora do Registro:", dateFormatted],
+        ["Status da Partida:", matchStatusEl.textContent],
+        [],
+        ["DUPLA", "GAMES", "PONTUAÇÃO ATUAL", "TIE-BREAK", "SAQUE"],
+        [
+          team1NameInput.value,
+          gameState.team1.games,
+          SCORE_STEPS[gameState.team1.scoreIdx],
+          gameState.team1.tieBreakPts,
+          gameState.team1.isServing ? "Sim" : "Não"
+        ],
+        [
+          team2NameInput.value,
+          gameState.team2.games,
+          SCORE_STEPS[gameState.team2.scoreIdx],
+          gameState.team2.tieBreakPts,
+          gameState.team2.isServing ? "Sim" : "Não"
+        ]
+      ];
+
+      const ws = XLSX.utils.aoa_to_sheet(sumulaData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Placar_Beach_Tennis");
+
+      const cleanT1 = team1NameInput.value.replace(/\s+/g, "_");
+      const cleanT2 = team2NameInput.value.replace(/\s+/g, "_");
+      XLSX.writeFile(wb, `R12_${cleanT1}_vs_${cleanT2}_${Date.now()}.xls`);
+    }
+
+    window.addEventListener("keydown", (e) => {
+      // Ignora se estiver digitando em campo de texto
+      if (e.target.tagName === "INPUT") return;
+
+      const k = e.key.toLowerCase();
+
+      // DUPLA 1: Volume Up, Page Up, Tecla A, Seta para Cima ou Esquerda
+      if (k === "volumeup" || k === "pageup" || k === "a" || k === "arrowup" || k === "arrowleft") {
+        e.preventDefault();
+        scorePoint("team1");
+      }
+      // DUPLA 2: Volume Down, Page Down, Tecla B, Seta para Baixo ou Direita
+      else if (k === "volumedown" || k === "pagedown" || k === "b" || k === "arrowdown" || k === "arrowright") {
+        e.preventDefault();
+        scorePoint("team2");
+      }
+      // DESFAZER: Play/Pause, Tecla Z, Espaço ou Backspace
+      else if (k === "mediaplaypause" || k === "z" || k === " " || k === "backspace") {
+        e.preventDefault();
+        undoPoint();
+      }
+      // ALTERNAR SAQUE: Next Track, Prev Track ou Tecla S
+      else if (k === "medianexttrack" || k === "mediaprevioustrack" || k === "s") {
+        e.preventDefault();
+        toggleServer();
+      }
+    });
+
+    // Sincronização dos nomes
+    team1NameInput.addEventListener("input", (e) => {
+      gameState.team1.name = e.target.value;
+    });
+    team2NameInput.addEventListener("input", (e) => {
+      gameState.team2.name = e.target.value;
+    });
+
+    // Cliques diretos na interface
+    document.getElementById("btn-team1-add").addEventListener("click", () => scorePoint("team1"));
+    document.getElementById("btn-team2-add").addEventListener("click", () => scorePoint("team2"));
+    document.getElementById("btn-undo").addEventListener("click", undoPoint);
+    document.getElementById("btn-reset").addEventListener("click", resetScoreboard);
+    document.getElementById("btn-export").addEventListener("click", exportSpreadsheet);
+    document.getElementById("btn-switch-server").addEventListener("click", () => toggleServer());
+
+    // Clicar nas bolinhas de saque para selecionar quem saca
+    team1ServingEl.addEventListener("click", () => toggleServer("team1"));
+    team2ServingEl.addEventListener("click", () => toggleServer("team2"));
+
+    // Alternância de Tela Cheia
+    document.getElementById("btn-fullscreen").addEventListener("click", () => {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else {
+        document.exitFullscreen().catch(() => {});
+      }
+    });
+
+    // Início
+    updateInterface();
+  </script>
+</body>
+</html>
